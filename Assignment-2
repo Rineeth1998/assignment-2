@@ -1,0 +1,62 @@
+Question3)	From the following table of user IDs, actions, and dates, write a query to return the publication and cancellation rate for each user.
+Hint: This must be answered using case conditions 
+-- retrieve count of starts, cancels, and publishes for each user
+-- calculate publication, cancelation rate for each user by dividing by number of starts, casting as float by multiplying by 1.0
+
+QUERY:
+##Initially i created a query for the total number of starts, Publish and Cancel for the respective user_id. Then i assigned the respected values to the news columns called cancel_items and published_items.
+table AS (
+SELECT user_id, 
+sum(CASE WHEN action = 'start' THEN 1 ELSE 0 END) AS starts, 
+sum(CASE WHEN action = 'cancel' THEN 1 ELSE 0 END) AS cancel_items, 
+sum(CASE WHEN action = 'publish' THEN 1 ELSE 0 END) AS published_items
+FROM users
+GROUP BY 1
+ORDER BY 1)
+
+##After creatiing the new table, calculate publication, cancelation rate for each user by dividing by number of starts, casting as float by multiplying by 1.0 to get the desired output.
+SELECT user_id, 1.0*published_items/starts AS publish_rate, 1.0*cancel_items/starts AS cancel_rate
+FROM table
+
+
+question4)	Learn about SQL rank() function and do the below.
+From the following table containing a list of dates and items ordered, write a query to return the most frequent item ordered on each date. Return multiple items in the case of a tie.
+
+QUERY:
+## Here add an column called item count by grouping date and items
+table1 AS (
+SELECT date, item, count(*) AS item_count
+FROM items
+GROUP BY 1, 2
+ORDER BY 1),
+## By using rank we are adding a new column in descending order, partition by date.
+table2 AS (
+SELECT *, rank() OVER (PARTITION by date ORDER BY item_count DESC) AS date_rank
+FROM table1)
+## return all the dates and items where rank is equal to 1
+SELECT date, item
+FROM table2
+WHERE date_rank = 1
+
+Question5)	A company defines its super users as those who have made at least two transactions. From the following table, write a query to return, for each user, the date when they become a super user, ordered by oldest super users first. Users who are not super users should also be present in the table.
+## By using row_number(), create a transaction number column partition by user_ID
+table1 AS (
+SELECT *, row_number() OVER (PARTITION by user_id ORDER BY transaction_date ASC) AS transaction_number
+FROM users),
+## by using transaction =2 filtering the table
+table2 AS (
+SELECT user_id, transaction_date
+FROM table1
+WHERE transaction_number = 2 ),
+## left join order by date.
+t3 AS (
+SELECT DISTINCT user_id
+FROM users )
+SELECT t3.user_id, transaction_date AS superuser_date
+FROM t3
+LEFT JOIN t2
+ON t3.user_id = t2.user_id
+ORDER BY 2
+
+
+
